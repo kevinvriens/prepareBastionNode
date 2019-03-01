@@ -67,12 +67,14 @@ do
   verifyCommand "installing ${package}"
 done
 
+}
+
 installNFS () {
   echo "opening firewall"
-  firewall-cmd --permanent --zone=public --add-service=ssh
-  firewall-cmd --permanent --zone=public --add-service=nfs
+  ${prefix} firewall-cmd --permanent --zone=public --add-service=ssh
+  ${prefix} firewall-cmd --permanent --zone=public --add-service=nfs
   verifyCommand "adding nfs to firewall"
-  firewall-cmd --reload
+  ${prefix} firewall-cmd --reload
 
   echo "installing NFS"
   ${prefix} systemctl start rpcbind
@@ -84,27 +86,37 @@ installNFS () {
 
 mountDisk () {
   ## this contains a dangerous assumption that the empty docker disk is the last one in lsblk
-  disk=`lsblk | tail -n 1 | awk '{ print $1 }'`
+  disk=`lsblk -p | tail -n 1 | awk '{ print $1 }'`
   debug "disk set to ${disk}"
-  ${prefix} mkdir -p ${nfsDir}
-  ${prefix} chown ${wheelUser} ${nfsDir}
+  if [ $(df -h | grep ${nfsDir} | wc -l) -gt 0 ]; then
+    echo "disk already mounted, nothing to do"
+  else
+    ${prefix} mkdir -p ${nfsDir}
 
-  ${prefix} sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' << EOF | fdisk ${disk}
+    sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' << EOF | ${prefix} fdisk ${disk}
     n # new partition
     p # primary partition
     1 # partition number 1
+ # default initial
+ # default end
     p # print the in-memory partition table
     w # write the partition table
     q # and we're done
 EOF
-  verifyCommand "creating partition"
-  ${prefix} mkfs.xfs ${disk}1
-  verifyCommand "formatting partition ${disk}1"
-  uuid=$(${prefix} blkid ${disk}1 | awk '{ print $2 }' | sed -e 's/"//g')
-  echo "${UUID} ${nfsDir} xfs defaults 0 0" | ${prefix} tee --append /etc/fstab
-  verifyCommand "adding disk to fstab"
-  ${prefix} mount ${nfsDir}
-  verifyCommand "mounting disk to ${nfsDir}"
+    verifyCommand "creating partition"
+
+    debug "formatting disk ${disk}1"
+    ${prefix} mkfs.xfs ${disk}1
+    verifyCommand "formatting partition ${disk}1"
+    UUID=$(${prefix} blkid ${disk}1 | awk '{ print $2 }' | sed -e 's/"//g')
+    debug "uuid set to ${UUID}"
+    echo "${UUID} ${nfsDir} xfs defaults 0 0" | ${prefix} tee --append /etc/fstab
+    verifyCommand "adding disk to fstab"
+    ${prefix} mount ${nfsDir}
+    verifyCommand "mounting disk to ${nfsDir}"
+  fi
+
+  ${prefix} chown ${wheelUser} ${nfsDir}
 }
 
 exposeNFS () {
@@ -141,7 +153,7 @@ installEPEL () {
 }
 
 getAnsibleScripts () {
-  info "openshiftRelease set to ${openshiftRelease}"
+  echo "openshiftRelease set to ${openshiftRelease}"
   cd ~
   git clone https://github.com/openshift/openshift-ansible
   verifyCommand "clone ansible git"
