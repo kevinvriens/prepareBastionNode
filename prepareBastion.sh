@@ -96,7 +96,7 @@ mountDisk () {
     p # print the in-memory partition table
     w # write the partition table
     q # and we're done
-  EOF
+EOF
   verifyCommand "creating partition"
   ${prefix} mkfs.xfs ${disk}1
   verifyCommand "formatting partition ${disk}1"
