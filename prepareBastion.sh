@@ -76,6 +76,8 @@ installNFS () {
 
   ${prefix} firewall-cmd --permanent --zone=public --add-service=ssh
   ${prefix} firewall-cmd --permanent --zone=public --add-service=nfs
+  ${prefix} firewall-cmd --permanent --zone=public --add-service=mountd
+  ${prefix} firewall-cmd --permanent --zone=public --add-service=rpc-bind
   verifyCommand "adding nfs to firewall"
   ${prefix} firewall-cmd --reload
 
@@ -84,6 +86,8 @@ installNFS () {
   verifyCommand "starting RPC bind"
   ${prefix} systemctl enable rpcbind
   ${prefix} systemctl enable nfs-server
+  ${prefix} systemctl enable nfs-lock
+  ${prefix} systemctl enable nfs-idmap
 
 }
 
@@ -127,8 +131,10 @@ exposeNFS () {
    echo "${nfsDir} ${subnet}(rw,sync,no_root_squash)" | ${prefix} tee --append /etc/exports
    verifyCommand "adding nfs share to /etc/exports"
 
-   ${prefix} systemctl enable nfs-server
+   ${prefix} systemctl start nfs-server
    verifyCommand "starting nfs server"
+   ${prefix} systemctl start nfs-lock
+   ${prefix} systemctl start nfs-idmap
 }
 
 generateKey () {
