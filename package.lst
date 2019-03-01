@@ -1,0 +1,5 @@
+#list of packages to install on the node
+# lines staring with # are ignored
+# each line is a seperate yum installation
+git
+nfs-utils
