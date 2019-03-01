@@ -3,3 +3,4 @@
 # each line is a seperate yum installation
 git
 nfs-utils
+firewalld

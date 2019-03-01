@@ -71,6 +71,9 @@ done
 
 installNFS () {
   echo "opening firewall"
+  ${prefix} systemctl start firewalld.service
+  ${prefix} systemctl enable firewalld.service
+
   ${prefix} firewall-cmd --permanent --zone=public --add-service=ssh
   ${prefix} firewall-cmd --permanent --zone=public --add-service=nfs
   verifyCommand "adding nfs to firewall"
