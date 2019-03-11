@@ -163,11 +163,15 @@ getAnsibleScripts () {
 }
 
 installCLI () {
-  echo "installing OC client"
-  wget -O /tmp/oc-client.tar.gz ${cli}
-  tar --wildcards -zxvf /tmp/oc-client.tar.gz oc
-  verifyCommand "downloading cli"
-  cp /tmp/openshift-origin-client-tools*/oc /usr/local/bin/
+  if [ "$(command -v oc)" == "" ]; then
+    echo "installing OC client"
+    wget -O /tmp/oc-client.tar.gz ${cli}
+    tar --wildcards -zxvf /tmp/oc-client.tar.gz oc
+    verifyCommand "downloading cli"
+    cp /tmp/openshift-origin-client-tools*/oc /usr/local/bin/
+  else
+    debug "oc cli already installed"
+  fi
 }
 
 runAll () {
