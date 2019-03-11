@@ -1,25 +1,28 @@
 #!/bin/sh
 
 ## v0.1 - Robert Jan de Groot - initial version (tested on CENTOS 7.6)
-
-
-# set your openshift branch here
-# this should match the branch name on https://github.com/openshift/openshift-ansible
-openshiftRelease="release-3.11"
-nfsDir="/export/nfs"
-wheelUser="centos"
-subnet="10.0.21.0/24"
+## v0.2 - Robert Jan de Groot - moved generic functions to generic-functions.sh and properties to environment file
 
 ## export DEBUG=TRUE to run debug info
-debug () {
-message=$1
-if [ "${DEBUG}" = "TRUE" ]; then
-  echo "  [DEBUG] ${message}" | tee --append ${diagfile}
-fi
-}
 
+### script starts here ###
+BASEDIR=$(dirname "$0")
 
 prereq () {
+
+if [ ! -f ${BASEDIR}/generic-functions.sh ]; then
+  echo "FATAL! Missing generic-functions.sh"
+  echo "exiting"
+  exit 1
+elif [[ ! -f ${BASEDIR}/environment.properties ]]; then
+  echo "FATAL! Missing generic-functions.sh"
+  echo "exiting"
+  exit 1
+else
+  debug "sourcing generic-functions and properties"
+  source ${BASEDIR}/generic-functions.sh
+  source ${BASEDIR}/environment.properties
+fi
 
 logfile="/tmp/prepareNode-$(date +%Y%m%d-%H%M%S).log"
 diagfile="/tmp/prepareNode-$(date +%Y%m%d-%H%M%S)-diagnostic.log"
@@ -40,27 +43,15 @@ fi
 
 debug "prefix set to ${prefix}"
 
-if [ ! -f ./package.lst ]; then
+if [ ! -f ${BASEDIR}/package.lst ]; then
   echo "cannot find property file!"
   exit 1
 fi
 
 }
 
-verifyCommand () {
-lastExit=$?
-command=$1
-if [ ${lastExit} -eq 0 ]; then
-  echo "${command} succeeded" | tee --append ${logfile}
-else
-  echo "${command} failed!" | tee --append ${logfile}
-  exit 1
-fi
-
-}
-
 installPackages () {
-cat ./package.lst | grep -v '#'| while read package
+cat ${BASEDIR}/package.lst | grep -v '#'| while read package
 do
   echo "installing ${package}"
   ${prefix} yum -y install ${package}
@@ -171,12 +162,12 @@ getAnsibleScripts () {
   verifyCommand "switching to ${openshiftRelease} branch"
 }
 
-printResult () {
-  echo "--------script completed--------"
-  echo "you can find the log in: ${logfile}"
-  if [ "${DEBUG}" == "TRUE" ]; then
-    echo "you can find the debug log in ${diagfile}"
-  fi
+installCLI () {
+  echo "installing OC client"
+  wget -O /tmp/oc-client.tar.gz ${cli}
+  tar --wildcards -zxvf /tmp/oc-client.tar.gz oc
+  verifyCommand "downloading cli"
+  cp /tmp/openshift-origin-client-tools*/oc /usr/local/bin/
 }
 
 runAll () {
@@ -191,4 +182,22 @@ runAll () {
   printResult;
 }
 
-runAll;
+
+## if there are no flags, run all.
+## otherwise run a specific command
+
+while getopts 'c:h' flag; do
+  case "${flag}" in
+    c) command="${OPTARG}" ;;
+    h) displayHelp;;
+    *) echo "unexpected input"; displayHelp ;;
+  esac
+done
+
+if [ "${command}" != "" ]; then
+  prereq;
+  ${command};
+  printResult;
+else
+  runAll;
+fi

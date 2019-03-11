@@ -2,5 +2,5 @@
 # lines staring with # are ignored
 # each line is a seperate yum installation
 git
-nfs-utils
+nfs-utils wget
 firewalld
