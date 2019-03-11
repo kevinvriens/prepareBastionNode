@@ -8,6 +8,26 @@
 ### script starts here ###
 BASEDIR=$(dirname "$0")
 
+displayHelp () {
+  echo "prepareBastion created by Robert Jan de Groot"
+  echo ""
+  echo "run this script without arguments to run all post-deploy actions"
+  echo "or specify the command you need, pick from the list below"
+  echo ""
+  echo "installPackages"
+  echo "installNFS"
+  echo "mountDisk"
+  echo "exposeNFS"
+  echo "generateKey"
+  echo "installEPEL"
+  echo "getAnsibleScripts"
+  echo "installCLI"
+  echo ""
+  echo "e.g."
+  echo "./prepareBastion.sh -c installNFS"
+  exit 0
+}
+
 prereq () {
 
 if [ ! -f ${BASEDIR}/generic-functions.sh ]; then
@@ -19,9 +39,9 @@ elif [[ ! -f ${BASEDIR}/environment.properties ]]; then
   echo "exiting"
   exit 1
 else
-  debug "sourcing generic-functions and properties"
   source ${BASEDIR}/generic-functions.sh
   source ${BASEDIR}/environment.properties
+  debug "sourced generic-functions and properties"
 fi
 
 logfile="/tmp/prepareNode-$(date +%Y%m%d-%H%M%S).log"
@@ -165,10 +185,12 @@ getAnsibleScripts () {
 installCLI () {
   if [ "$(command -v oc)" == "" ]; then
     echo "installing OC client"
+    mkdir /tmp/cli
     wget -O /tmp/oc-client.tar.gz ${cli}
-    tar --wildcards -zxvf /tmp/oc-client.tar.gz oc
+    tar --wildcards -C /tmp/cli -zxvf /tmp/oc-client.tar.gz openshift-origin-client-tools*/oc
     verifyCommand "downloading cli"
-    cp /tmp/openshift-origin-client-tools*/oc /usr/local/bin/
+    ${prefix} cp /tmp/cli/openshift-origin-client-tools*/oc /usr/local/bin/
+    verifyCommand "adding CLI to PATH"
   else
     debug "oc cli already installed"
   fi
@@ -183,6 +205,7 @@ runAll () {
   generateKey;
   installEPEL;
   getAnsibleScripts;
+  installCLI;
   printResult;
 }
 

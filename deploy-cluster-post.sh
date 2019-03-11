@@ -46,6 +46,7 @@ displayHelp () {
   echo "or specify the command you need, pick from the list below"
   echo "./deploy-cluster-post.sh -c createPV"
   echo "./deploy-cluster-post.sh -c addTemplates"
+  exit 0
 
 }
 
