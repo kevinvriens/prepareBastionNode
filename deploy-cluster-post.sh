@@ -135,7 +135,7 @@ addTemplates () {
 
   remoteOC "${stageDir}/FISimageStreams.sh"
   verifyCommand "preparing image streams"
-  
+
   remoteOC "${stageDir}/addFuseTemplates.sh"
   verifyCommand "adding templates"
 
@@ -168,8 +168,8 @@ while getopts 'c:h' flag; do
   case "${flag}" in
     c) command="${OPTARG}" ;;
     h) displayHelp;;
-    s) sflag=true;pvSize=${OPTARG}
-    n) nflag=true;pvName=${OPTARG}
+    s) sflag=true; pvCapacity=${OPTARG} ;;
+    n) nflag=true; pvName=${OPTARG} ;;
     *) echo "unexpected input"; displayHelp ;;
   esac
 done
