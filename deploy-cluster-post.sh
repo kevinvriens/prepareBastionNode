@@ -40,6 +40,10 @@ prereq () {
   fi
 
   mkdir ${stageDir}
+
+  ## todo: this is a bad solution, to grab the first host after the [masters] section in the ansible inventory file
+  master=$(grep -A1 "masters" /etc/ansible/hosts | tail -n 1 | cut -f 1 -d ' ')
+  debug "master node set to ${master}"
 }
 
 displayHelp () {
@@ -47,7 +51,7 @@ displayHelp () {
   echo ""
   echo "run this script without arguments to run all post-deploy actions"
   echo "or specify the command you need, pick from the list below"
-  echo "./deploy-cluster-post.sh -c createPV"
+  echo "./deploy-cluster-post.sh -c createPV -n pv001 -s 1Gi"
   echo "./deploy-cluster-post.sh -c addTemplates"
   echo "./deploy-cluster-post.sh -c addRBAC"
   exit 0
@@ -56,9 +60,6 @@ displayHelp () {
 
 remoteOC () {
   command=${1}
-  ## todo: this is a bad solution, to grab the first host after the [masters] section in the ansible inventory file
-  master=$(grep -A1 "masters" /etc/ansible/hosts | tail -n 1 | cut -f 1 -d ' ')
-  debug "master node set to ${master}"
   ssh -i ~/.ssh/id_rsa ${master} ${command}
 }
 
@@ -86,21 +87,29 @@ createPV () {
     debug "copying pv-template to stage ${stageDir}"
     cp ${BASEDIR}/templates/create-pv-template.yml ${stageDir}/
 
-    pvName="pv001"
+    if [ -z ${nflag} ]; then
+      ## use default name if nothing is set
+      pvName="pv001"
+    fi
     debug "setting name to ${pvName}"
     sed -i "s|__name__|${pvName}|g" ${stageDir}/create-pv-template.yml
 
-    pvCapacity="1Gi"
+    if [ -z ${sflag} ]; then
+      ## use default size if nothing is set
+      pvCapacity="1Gi"
+    fi
+
     debug "setting capacity to ${pvCapacity}"
     sed -i "s|__capacity__|${pvCapacity}|g" ${stageDir}/create-pv-template.yml
 
-    pvPath="/mnt/nfs/${pvName}"
+    pvPath="${nfsDir}/${pvName}"
     debug "setting path to ${pvPath}"
     sed -i "s|__path__|${pvPath}|g" ${stageDir}/create-pv-template.yml
 
     ## create the subfolder on the NFS server if needed
     if [ ! -d ${nfsDir}/${pvName} ]; then
       mkdir ${nfsDir}/${pvName}
+      chmod 777 ${nfsDir}/${pvName}
     fi
 
     ## get the bastion current ip
@@ -109,7 +118,6 @@ createPV () {
     sed -i "s|__server__|${currentIP}|g" ${stageDir}/create-pv-template.yml
     verifyCommand "updating pv template"
 
-    copyRemote ""
     debug "copying stage dir"
     ## put our template file on the master node
     copyStage;
@@ -121,7 +129,16 @@ createPV () {
 }
 
 addTemplates () {
-echo "not finished"
+  cp ${BASEDIR}/templates/FISimageStreams.sh ${stageDir}
+  cp ${BASEDIR}/templates/addFuseTemplates.sh ${stageDir}
+  copyStage;
+
+  remoteOC "${stageDir}/FISimageStreams.sh"
+  verifyCommand "preparing image streams"
+  
+  remoteOC "${stageDir}/addFuseTemplates.sh"
+  verifyCommand "adding templates"
+
 }
 
 
@@ -137,8 +154,12 @@ runAll () {
   prereq;
   addRBAC;
   createPV;
+  addTemplates
   printResult;
 }
+
+sflag=''
+nflag=''
 
 ## if there are no flags, run all.
 ## otherwise run a specific command
@@ -147,6 +168,8 @@ while getopts 'c:h' flag; do
   case "${flag}" in
     c) command="${OPTARG}" ;;
     h) displayHelp;;
+    s) sflag=true;pvSize=${OPTARG}
+    n) nflag=true;pvName=${OPTARG}
     *) echo "unexpected input"; displayHelp ;;
   esac
 done

@@ -17,12 +17,15 @@ fi
 }
 
 printResult () {
+  echo ""
   echo "--------script completed--------"
+  echo ""
   echo "you can find the log in: ${logfile}"
   if [ "${DEBUG}" == "TRUE" ]; then
     echo "you can find the debug log in ${diagfile}"
   fi
   if [ ! -z ${stageDir} ]; then
+    echo ""
     echo "there is a stagedir available at"
     echo "${stageDir}"
   fi
