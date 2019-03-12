@@ -11,7 +11,7 @@ BASEDIR=$(dirname "$0")
 displayHelp () {
   echo "prepareBastion created by Robert Jan de Groot"
   echo ""
-  echo "run this script without arguments to run all post-deploy actions"
+  echo "run this script without arguments to run all Bastion Installation actions"
   echo "or specify the command you need, pick from the list below"
   echo ""
   echo "installPackages"
@@ -192,7 +192,7 @@ installCLI () {
     ${prefix} cp /tmp/cli/openshift-origin-client-tools*/oc /usr/local/bin/
     verifyCommand "adding CLI to PATH"
   else
-    debug "oc cli already installed"
+    echo "oc cli already installed"
   fi
 }
 
