@@ -11,3 +11,4 @@ spec:
     path: __path__
     server: __server__
   persistentVolumeReclaimPolicy: Recycle
+  storageClassName: slow
