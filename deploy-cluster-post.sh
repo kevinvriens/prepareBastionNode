@@ -6,6 +6,7 @@
 
 ### script starts here
 BASEDIR=$(dirname "$0")
+stageDir="/tmp/deploy-cluster-post-$(date +%s)"
 
 prereq () {
 
@@ -26,7 +27,7 @@ prereq () {
   logfile="/tmp/deploy-post-$(date +%Y%m%d-%H%M%S).log"
   diagfile="/tmp/deploy-post-$(date +%Y%m%d-%H%M%S)-diagnostic.log"
 
-  if [ ! -f ./environment.properties ]; then
+  if [ ! -f ${BASEDIR}/environment.properties ]; then
     echo "cannot find property file!"
     exit 1
   fi
@@ -37,6 +38,8 @@ prereq () {
     echo "use prepareBastion.sh -c installCLI and rerun this script"
     exit 1
   fi
+
+  mkdir ${stageDir}
 }
 
 displayHelp () {
@@ -51,6 +54,38 @@ displayHelp () {
 }
 
 createPV () {
+  if [ ! -f ${BASEDIR}/templates/create-pv-template.yml ]; then
+    echo "cannot find property file!"
+    exit 1
+  else
+    debug "copying pv-template to stage ${stageDir}"
+    cp ${BASEDIR}/templates/create-pv-template.yml ${stageDir}/
+
+    pvName="pv001"
+    debug "setting name to ${pvName}"
+    sed -i "s|__name__|${pvName}|g" ${stageDir}/create-pv-template.yml
+
+    pvCapacity="1Gi"
+    debug "setting capacity to ${1Gi}"
+    sed -i "s|__capacity__|${pvCapacity}|g" ${stageDir}/create-pv-template.yml
+
+    pvPath="/mnt/nfs/${pvName}"
+    debug "setting path to ${pvPath}"
+    sed -i "s|__path__|${pvPath}|g" ${stageDir}/create-pv-template.yml
+
+    ## create the subfolder on the NFS server if needed
+    if [ ! -d ${nfsDir}/${pvName} ]; then
+      mkdir ${nfsDir}/${pvName}
+    fi
+
+    ## get the bastion current ip
+    currentIP=$(hostname --ip-address)
+    debug "setting server to ${currentIP}"
+    sed -i "s|__server__|${currentIP}|g" ${stageDir}/create-pv-template.yml
+
+
+  fi
+
 
 }
 
