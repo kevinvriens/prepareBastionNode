@@ -164,7 +164,7 @@ nflag=''
 ## if there are no flags, run all.
 ## otherwise run a specific command
 
-while getopts 'c:h' flag; do
+while getopts 'c:hs:n:' flag; do
   case "${flag}" in
     c) command="${OPTARG}" ;;
     h) displayHelp;;
