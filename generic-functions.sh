@@ -22,7 +22,7 @@ printResult () {
   if [ "${DEBUG}" == "TRUE" ]; then
     echo "you can find the debug log in ${diagfile}"
   fi
-  if [ ! -z ${stageDir}]; then
+  if [ ! -z ${stageDir} ]; then
     echo "there is a stagedir available at"
     echo "${stageDir}"
   fi

@@ -54,6 +54,19 @@ displayHelp () {
 
 }
 
+remoteOC () {
+  command=${1}
+  ## todo: this is a bad solution, to grab the first host after the [masters] section in the ansible inventory file
+  master=$(grep -A1 "masters" /etc/ansible/hosts | tail -n 1 | cut -f 1 -d ' ')
+  debug "master node set to ${master}"
+  ssh -i ~/.ssh/id_rsa ${master} ${command}
+}
+
+copyStage () {
+  scp -rp -i ~/.ssh/id_rsa ${stageDir} ${master}:${stageDir}
+  verifyCommand "transfer of stagedir"
+}
+
 addRBAC () {
   user=$1
   if [ -z ${user} ]; then
@@ -61,9 +74,7 @@ addRBAC () {
   fi
 debug "user set to ${user}"
 
-## add admin rback roles to user admin
-oc login ${masterURL} --token=${token}
-oc create clusterrolebinding registry-controller --clusterrole=cluster-admin --user=${user}
+remoteOC "oc create clusterrolebinding registry-controller --clusterrole=cluster-admin --user=${user}"
 verifyCommand "setting RBAC roles for user ${user}"
 }
 
@@ -98,9 +109,11 @@ createPV () {
     sed -i "s|__server__|${currentIP}|g" ${stageDir}/create-pv-template.yml
     verifyCommand "updating pv template"
 
-    debug "logging in "
-    oc login ${masterURL} --token=${token}
-    oc create -f ${stageDir}/create-pv-template.yml
+    copyRemote ""
+    debug "copying stage dir"
+    ## put our template file on the master node
+    copyStage;
+    remoteOC "oc create -f ${stageDir}/create-pv-template.yml"
     verifyCommand "creating pv ${pvName}"
   fi
 
