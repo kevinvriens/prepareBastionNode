@@ -19,9 +19,9 @@ prereq () {
     echo "exiting"
     exit 1
   else
-    debug "sourcing generic-functions and properties"
     source ${BASEDIR}/generic-functions.sh
     source ${BASEDIR}/environment.properties
+    debug "sourced generic-functions and properties"
   fi
 
   logfile="/tmp/deploy-post-$(date +%Y%m%d-%H%M%S).log"
@@ -49,8 +49,22 @@ displayHelp () {
   echo "or specify the command you need, pick from the list below"
   echo "./deploy-cluster-post.sh -c createPV"
   echo "./deploy-cluster-post.sh -c addTemplates"
+  echo "./deploy-cluster-post.sh -c addRBAC"
   exit 0
 
+}
+
+addRBAC () {
+  user=$1
+  if [ -z ${user} ]; then
+    user=admin
+  fi
+debug "user set to ${user}"
+
+## add admin rback roles to user admin
+oc login ${masterURL} --token=${token}
+oc create clusterrolebinding registry-controller --clusterrole=cluster-admin --user=${user}
+verifyCommand "setting RBAC roles for user ${user}"
 }
 
 createPV () {
@@ -66,7 +80,7 @@ createPV () {
     sed -i "s|__name__|${pvName}|g" ${stageDir}/create-pv-template.yml
 
     pvCapacity="1Gi"
-    debug "setting capacity to ${1Gi}"
+    debug "setting capacity to ${pvCapacity}"
     sed -i "s|__capacity__|${pvCapacity}|g" ${stageDir}/create-pv-template.yml
 
     pvPath="/mnt/nfs/${pvName}"
@@ -82,15 +96,19 @@ createPV () {
     currentIP=$(hostname --ip-address)
     debug "setting server to ${currentIP}"
     sed -i "s|__server__|${currentIP}|g" ${stageDir}/create-pv-template.yml
+    verifyCommand "updating pv template"
 
-
+    debug "logging in "
+    oc login ${masterURL} --token=${token}
+    oc create -f ${stageDir}/create-pv-template.yml
+    verifyCommand "creating pv ${pvName}"
   fi
 
 
 }
 
 addTemplates () {
-
+echo "not finished"
 }
 
 
@@ -104,7 +122,8 @@ printResult () {
 
 runAll () {
   prereq;
-  createPV
+  addRBAC;
+  createPV;
   printResult;
 }
 
