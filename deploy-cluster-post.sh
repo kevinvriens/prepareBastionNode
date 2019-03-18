@@ -44,6 +44,11 @@ prereq () {
   ## todo: this is a bad solution, to grab the first host after the [masters] section in the ansible inventory file
   master=$(grep -A1 "masters" /etc/ansible/hosts | tail -n 1 | cut -f 1 -d ' ')
   debug "master node set to ${master}"
+  if [ -z "${master}" ]; then
+    echo "no master host found in /etc/ansible/hosts !"
+    exit 1
+  fi
+  }
 }
 
 displayHelp () {
@@ -172,14 +177,14 @@ oflag=''
 ## if there are no flags, run all.
 ## otherwise run a specific command
 
-while getopts 'c:hs:n:' flag; do
+while getopts 'c:hs:n:o:' flag; do
   case "${flag}" in
     c) command="${OPTARG}" ;;
     h) displayHelp;;
     s) sflag=true; pvCapacity=${OPTARG} ;;
     n) nflag=true; pvName=${OPTARG} ;;
     o) oflag=true; pvServer=${OPTARG} ;;
-    *) echo "unexpected input"; displayHelp ;;
+    *) echo "ERROR! unexpected input!"; echo ""; displayHelp ;;
   esac
 done
 
