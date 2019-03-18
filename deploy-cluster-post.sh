@@ -112,11 +112,18 @@ createPV () {
       chmod 777 ${nfsDir}/${pvName}
     fi
 
-    ## get the bastion current ip
-    currentIP=$(hostname --ip-address)
-    debug "setting server to ${currentIP}"
-    sed -i "s|__server__|${currentIP}|g" ${stageDir}/create-pv-template.yml
-    verifyCommand "updating pv template"
+    if [ "${oflag}" == "true" ]; then
+      ## use the given servername
+      debug "setting server to ${pvServer}"
+      sed -i "s|__server__|${pvServer}|g" ${stageDir}/create-pv-template.yml
+      verifyCommand "setting given IP ${pvServer} in pv template"
+    else
+      ## get the bastion current ip
+      currentIP=$(hostname --ip-address)
+      debug "setting server to ${currentIP}"
+      sed -i "s|__server__|${currentIP}|g" ${stageDir}/create-pv-template.yml
+      verifyCommand "setting local IP in pv template"
+    fi
 
     debug "copying stage dir"
     ## put our template file on the master node
@@ -160,6 +167,7 @@ runAll () {
 
 sflag=''
 nflag=''
+oflag=''
 
 ## if there are no flags, run all.
 ## otherwise run a specific command
@@ -170,6 +178,7 @@ while getopts 'c:hs:n:' flag; do
     h) displayHelp;;
     s) sflag=true; pvCapacity=${OPTARG} ;;
     n) nflag=true; pvName=${OPTARG} ;;
+    o) oflag=true; pvServer=${OPTARG} ;;
     *) echo "unexpected input"; displayHelp ;;
   esac
 done
