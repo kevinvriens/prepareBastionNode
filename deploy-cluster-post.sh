@@ -48,7 +48,6 @@ prereq () {
     echo "no master host found in /etc/ansible/hosts !"
     exit 1
   fi
-  }
 }
 
 displayHelp () {
