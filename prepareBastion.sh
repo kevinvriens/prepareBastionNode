@@ -156,9 +156,14 @@ generateKey () {
   cd ~/.ssh
   ssh-keygen -t rsa -N "" -f cloudformationKey
   verifyCommand "creation of keypair"
-  mkdir ${nfsDir}/keys
-  verifyCommand "creation of key folder"
-  cp ./cloudformationKey.pub ${nfsDir}/keys/
+
+  if [ -d ${nfsDir} ]; then
+    mkdir ${nfsDir}/keys
+    verifyCommand "creation of key folder"
+    cp ./cloudformationKey.pub ${nfsDir}/keys/
+  else
+    echo "Warning, no dir found: ${nfsDir}"
+  fi
 
 }
 
