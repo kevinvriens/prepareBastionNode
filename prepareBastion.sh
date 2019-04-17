@@ -122,7 +122,7 @@ mountDisk () {
     q # and we're done
 EOF
     verifyCommand "creating partition"
-    diskPart=`${prefix} fdisk -l | tail -n 1 | awk '{print $1 }`
+    diskPart=`${prefix} lsblk -p | tail -n 1 | awk '{ print $1 }' | sed 's/└─//g'`
     debug "formatting disk ${diskPart}"
     ${prefix} mkfs.xfs ${diskPart}
     verifyCommand "formatting partition ${diskPart}"
