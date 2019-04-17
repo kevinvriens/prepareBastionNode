@@ -122,11 +122,11 @@ mountDisk () {
     q # and we're done
 EOF
     verifyCommand "creating partition"
-
-    debug "formatting disk ${disk}1"
-    ${prefix} mkfs.xfs ${disk}1
-    verifyCommand "formatting partition ${disk}1"
-    UUID=$(${prefix} blkid ${disk}1 | awk '{ print $2 }' | sed -e 's/"//g')
+    diskPart=`${prefix} fdisk -l | tail -n 1 | awk '{print $1 }`
+    debug "formatting disk ${diskPart}"
+    ${prefix} mkfs.xfs ${diskPart}
+    verifyCommand "formatting partition ${diskPart}"
+    UUID=$(${prefix} blkid ${diskPart} | awk '{ print $2 }' | sed -e 's/"//g')
     debug "uuid set to ${UUID}"
     echo "${UUID} ${nfsDir} xfs defaults 0 0" | ${prefix} tee --append /etc/fstab
     verifyCommand "adding disk to fstab"
