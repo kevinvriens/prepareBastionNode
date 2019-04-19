@@ -40,9 +40,8 @@ prereq () {
   fi
 
   mkdir ${stageDir}
-
-  ## todo: this is a bad solution, to grab the first host after the [masters] section in the ansible inventory file
-  master=$(grep -A1 "masters" /etc/ansible/hosts | tail -n 1 | cut -f 1 -d ' ')
+  
+  master=sed -n -e '/\[masters]/,/\#/  p' test.txt  | sed -e '1d;$d' | cut -f 1 -d ' '
   debug "master node set to ${master}"
   if [ -z "${master}" ]; then
     echo "no master host found in /etc/ansible/hosts !"
